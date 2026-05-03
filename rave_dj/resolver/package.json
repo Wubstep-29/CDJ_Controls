@@ -1,0 +1,9 @@
+{
+  "name": "rave-dj-resolver",
+  "version": "1.0.0",
+  "description": "yt-dlp audio URL resolver for rave_dj — no npm dependencies required",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

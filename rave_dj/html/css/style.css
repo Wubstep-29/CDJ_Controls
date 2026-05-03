@@ -1,0 +1,405 @@
+/* ─── NEXUS DJ CONTROL — dynamic state + Tailwind companion ─── */
+/* Layout is handled by Tailwind utility classes in index.html.
+   This file covers: dynamic state classes (.playing, .active, .live,
+   .resolving, .status-live), decorations that don't map cleanly to
+   utilities (knobs, range sliders, jog patterns) and custom animations. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Utility ───────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ─── Status dot ────────────────────────────────────────────── */
+.status-dot {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+}
+.status-off  { background: #27272a; }
+.status-live {
+    background: #10b981;
+    border-color: transparent;
+    box-shadow: 0 0 6px #10b981, 0 0 14px rgba(16,185,129,0.4);
+    animation: statusBreathe 1.6s ease-in-out infinite;
+}
+@keyframes statusBreathe {
+    0%, 100% { box-shadow: 0 0 6px #10b981, 0 0 12px rgba(16,185,129,0.35); }
+    50%      { box-shadow: 0 0 12px #10b981, 0 0 22px rgba(16,185,129,0.7); }
+}
+
+/* ─── Track name resolving blink ────────────────────────────── */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+}
+.track-name.resolving {
+    color: #f59e0b;
+    animation: blink 1s ease-in-out infinite;
+}
+
+/* ─── Jog wheel decorations ─────────────────────────────────── */
+.jog-grooves {
+    background:
+        repeating-conic-gradient(from 0deg,
+            rgba(255,255,255,0.04) 0deg 1.5deg,
+            transparent 1.5deg 6deg),
+        radial-gradient(circle at 50% 50%, #141418 0%, #08080a 85%);
+    box-shadow:
+        inset 0 0 32px rgba(0,0,0,0.85),
+        inset 0 2px 2px rgba(255,255,255,0.04);
+}
+
+.jog-ring {
+    background:
+        conic-gradient(from 0deg,
+            #2a2a30 0deg,
+            #18181c 90deg,
+            #2a2a30 180deg,
+            #18181c 270deg,
+            #2a2a30 360deg);
+    box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 12px rgba(0,0,0,0.6);
+}
+
+.jog-center {
+    background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.1), transparent 55%),
+        radial-gradient(circle at 50% 50%, #1f1f24 0%, #0b0b0e 80%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        inset 0 -2px 6px rgba(0,0,0,0.7),
+        0 2px 6px rgba(0,0,0,0.6);
+}
+
+/* ─── Knobs (minimal tick, no LED arc — NEXUS aesthetic) ────── */
+.knob {
+    --knob-color: #06b6d4;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    position: relative;
+    cursor: ns-resize;
+    background:
+        radial-gradient(circle at 30% 22%, rgba(255,255,255,0.15), transparent 50%),
+        radial-gradient(circle at 50% 50%, #27272a 0%, #18181b 60%, #0c0c0e 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        inset 0 -2px 4px rgba(0,0,0,0.65),
+        0 2px 5px rgba(0,0,0,0.6);
+    transition: box-shadow 0.15s;
+    user-select: none;
+}
+.knob:hover {
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        inset 0 -2px 4px rgba(0,0,0,0.65),
+        0 2px 7px rgba(0,0,0,0.75),
+        0 0 6px var(--knob-color);
+}
+.knob:active { cursor: grabbing; }
+
+/* Tick indicator — rides the knob's inline rotate transform */
+.knob::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 9px;
+    background: var(--knob-color);
+    border-radius: 1px;
+    box-shadow: 0 0 4px var(--knob-color);
+}
+
+/* Per-knob accent colors */
+#eq-a-hi, #eq-a-mid, #eq-a-lo, #gain-a { --knob-color: #06b6d4; }
+#eq-b-hi, #eq-b-mid, #eq-b-lo, #gain-b { --knob-color: #10b981; }
+.knob--gain { --knob-color: #f59e0b; }
+
+/* ─── Transport buttons ─────────────────────────────────────── */
+.loop-btn, .cue-btn, .play-btn {
+    transition: all 0.12s ease;
+    cursor: pointer;
+    user-select: none;
+    font-family: 'Inter', sans-serif;
+}
+.loop-btn:active, .cue-btn:active, .play-btn:active {
+    transform: translateY(1px) scale(0.96);
+}
+
+/* Play button — swap icon via ::before based on .playing class,
+   and hide the JS-set textContent so the circle stays clean */
+.play-btn {
+    font-size: 0;
+    position: relative;
+    color: #06b6d4;
+}
+.play-btn::before {
+    content: '▶';
+    font-size: 14px;
+    color: inherit;
+    line-height: 1;
+    filter: drop-shadow(0 0 3px currentColor);
+}
+.play-btn--b { color: #10b981; }
+.play-btn.playing::before { content: '⏸'; font-size: 16px; }
+.play-btn.playing {
+    animation: playPulseA 1.6s ease-in-out infinite;
+    background: rgba(6,182,212,0.2) !important;
+    border-color: #06b6d4 !important;
+}
+.play-btn--b.playing {
+    animation: playPulseB 1.6s ease-in-out infinite;
+    background: rgba(16,185,129,0.2) !important;
+    border-color: #10b981 !important;
+}
+@keyframes playPulseA {
+    0%, 100% { box-shadow: 0 0 8px rgba(6,182,212,0.4), inset 0 0 4px rgba(6,182,212,0.2); }
+    50%      { box-shadow: 0 0 20px rgba(6,182,212,0.8), inset 0 0 8px rgba(6,182,212,0.4); }
+}
+@keyframes playPulseB {
+    0%, 100% { box-shadow: 0 0 8px rgba(16,185,129,0.4), inset 0 0 4px rgba(16,185,129,0.2); }
+    50%      { box-shadow: 0 0 20px rgba(16,185,129,0.8), inset 0 0 8px rgba(16,185,129,0.4); }
+}
+
+/* Loop button active state — yellow pulse */
+.loop-btn.active {
+    color: #f59e0b !important;
+    border-color: #f59e0b !important;
+    background: rgba(245,158,11,0.1) !important;
+    animation: loopPulse 1s ease-in-out infinite;
+}
+.loop-btn.active span {
+    color: #f59e0b !important;
+    text-shadow: 0 0 4px rgba(245,158,11,0.7);
+}
+@keyframes loopPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+    50%      { box-shadow: 0 0 14px rgba(245,158,11,0.75); }
+}
+
+/* CUE press feedback */
+.cue-btn.cue-set {
+    background: rgba(239,68,68,0.2) !important;
+    box-shadow: 0 0 10px rgba(239,68,68,0.5);
+}
+
+/* ─── GO LIVE button ────────────────────────────────────────── */
+.go-live-btn { transition: all 0.15s; cursor: pointer; user-select: none; }
+.go-live-btn:active { transform: translateY(1px); }
+.go-live-btn.live {
+    color: #10b981 !important;
+    border-color: #10b981 !important;
+    background: rgba(16,185,129,0.15) !important;
+    animation: liveGlow 1.6s ease-in-out infinite;
+    text-shadow: 0 0 6px rgba(16,185,129,0.5);
+}
+@keyframes liveGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(16,185,129,0.35), inset 0 0 4px rgba(16,185,129,0.15); }
+    50%      { box-shadow: 0 0 20px rgba(16,185,129,0.7), inset 0 0 8px rgba(16,185,129,0.35); }
+}
+
+/* ─── Close button ──────────────────────────────────────────── */
+.close-btn { cursor: pointer; transition: all 0.12s; }
+.close-btn:active { transform: scale(0.9); }
+
+/* ─── Load button ───────────────────────────────────────────── */
+.load-btn { cursor: pointer; transition: all 0.12s; }
+.load-btn:active { transform: translateY(1px); }
+
+/* ─── Waveform wrapper ──────────────────────────────────────── */
+.waveform-wrapper::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0; bottom: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+    z-index: 2;
+    pointer-events: none;
+}
+.waveform { display: block; }
+
+/* ─── Range sliders: horizontal (crossfader) ────────────────── */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+}
+
+.xfader {
+    height: 20px;
+    width: 100%;
+}
+.xfader::-webkit-slider-runnable-track {
+    height: 4px;
+    background: linear-gradient(90deg, #06b6d4 0%, #27272a 50%, #10b981 100%);
+    border-radius: 2px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+}
+.xfader::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 18px;
+    margin-top: -7px;
+    background: linear-gradient(180deg, #3f3f46 0%, #18181b 100%);
+    border: 1px solid #52525b;
+    border-radius: 2px;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.2),
+        0 2px 4px rgba(0,0,0,0.7);
+    cursor: grab;
+}
+.xfader::-webkit-slider-thumb:active { cursor: grabbing; }
+
+/* ─── Vertical sliders (pitch + channel fader) ──────────────── */
+.pitch-slider, .ch-fader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90px;
+    height: 24px;
+    margin-top: -12px;
+    margin-left: -45px;
+    transform: rotate(-90deg);
+    background: transparent;
+    cursor: pointer;
+}
+.pitch-slider { accent-color: #f59e0b; }
+#pitch-a { accent-color: #06b6d4; }
+#pitch-b { accent-color: #10b981; }
+
+.ch-fader {
+    width: 80px;
+    margin-left: -40px;
+}
+#fader-a { accent-color: #06b6d4; }
+#fader-b { accent-color: #10b981; }
+
+.pitch-slider::-webkit-slider-runnable-track,
+.ch-fader::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 2px;
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.8);
+}
+.pitch-slider::-webkit-slider-thumb,
+.ch-fader::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 22px;
+    margin-top: -10px;
+    background: linear-gradient(180deg, #3f3f46 0%, #18181b 100%);
+    border: 1px solid #52525b;
+    border-radius: 2px;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.2),
+        0 2px 4px rgba(0,0,0,0.7);
+}
+
+/* ─── Library rows ──────────────────────────────────────────── */
+.library-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    background: #0f0f12;
+    border-bottom: 1px solid #18181b;
+    font-size: 11px;
+    transition: background 0.1s;
+}
+.library-row:hover { background: #16161a; }
+
+.library-row-name {
+    flex: 1;
+    color: #d4d4d8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10px;
+    letter-spacing: 0.3px;
+}
+
+.library-btn {
+    background: transparent;
+    border: 1px solid #27272a;
+    color: #71717a;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.1s;
+    letter-spacing: 0.5px;
+}
+.library-btn:active { transform: translateY(1px); }
+.library-btn--a:hover {
+    color: #06b6d4;
+    border-color: #06b6d4;
+    box-shadow: 0 0 6px rgba(6,182,212,0.45);
+}
+.library-btn--b:hover {
+    color: #10b981;
+    border-color: #10b981;
+    box-shadow: 0 0 6px rgba(16,185,129,0.45);
+}
+.library-btn--edit {
+    padding: 2px 5px;
+    font-size: 11px;
+    line-height: 1;
+}
+.library-btn--edit:hover {
+    color: #f59e0b;
+    border-color: #f59e0b;
+    box-shadow: 0 0 6px rgba(245,158,11,0.45);
+}
+.library-btn--del:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+    box-shadow: 0 0 6px rgba(239,68,68,0.5);
+}
+
+.library-row-edit {
+    flex: 1;
+    min-width: 0;
+    background: #1a1a1e;
+    border: 1px solid #3f3f46;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    outline: none;
+    letter-spacing: 0.3px;
+}
+.library-row-edit:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 6px rgba(245,158,11,0.35);
+}
+
+/* ─── URL warning ───────────────────────────────────────────── */
+.url-warn { font-family: 'JetBrains Mono', monospace; }
+
+/* ─── Pitch val readout ─────────────────────────────────────── */
+.pitch-val { white-space: nowrap; }
+
+/* ─── Scrollbars ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }

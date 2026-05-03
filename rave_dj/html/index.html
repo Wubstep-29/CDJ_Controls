@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAVE DJ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        dj: {
+                            bg:         '#0a0a0c',
+                            panel:      '#121216',
+                            panelHover: '#1a1a20',
+                            border:     '#27272a',
+                            knob:       '#18181b',
+                            deckA:      '#06b6d4',
+                            deckB:      '#10b981',
+                            alert:      '#ef4444',
+                            warn:       '#f59e0b',
+                        }
+                    },
+                    boxShadow: {
+                        'neon-a': '0 0 10px rgba(6,182,212,0.4), inset 0 0 5px rgba(6,182,212,0.2)',
+                        'neon-b': '0 0 10px rgba(16,185,129,0.4), inset 0 0 5px rgba(16,185,129,0.2)',
+                        'knob':   '0 4px 6px -1px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+                        'jog':    'inset 0 0 40px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.5)',
+                        'fader':  '0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-300 font-sans overflow-hidden select-none" style="background: transparent;">
+
+<div id="dj-panel" class="hidden fixed bottom-0 left-0 right-0 h-[520px] max-h-[92vh] flex flex-col bg-black border-t border-dj-border z-50">
+
+    <!-- Header -->
+    <header class="panel-header h-10 border-b border-dj-border bg-dj-bg flex items-center justify-between px-5 shrink-0">
+        <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-dj-deckA" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+            </svg>
+            <span class="panel-title font-bold tracking-widest text-xs text-white">RAVE<span class="text-dj-border mx-1">|</span>DJ CONTROL</span>
+        </div>
+        <div class="header-right flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-0.5 bg-dj-panel rounded-full border border-dj-border">
+                <span id="dj-status" class="status-dot status-off w-2 h-2 rounded-full"></span>
+                <span id="dj-status-label" class="status-label text-[10px] font-mono text-slate-400 tracking-wider">OFFLINE</span>
+            </div>
+            <button id="dj-close" class="close-btn text-slate-500 hover:text-dj-alert transition-colors w-6 h-6 flex items-center justify-center text-sm">✕</button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="dj-layout flex-1 flex gap-2 p-2 min-h-0 overflow-auto">
+
+        <!-- ═════════ DECK A ═════════ -->
+        <section class="deck deck--a flex-1 bg-dj-panel rounded-lg border border-dj-border flex flex-col overflow-hidden min-w-[300px]">
+            <div class="h-10 border-b border-dj-border flex items-center px-3 gap-3 bg-gradient-to-r from-dj-deckA/10 to-transparent shrink-0">
+                <div class="deck-label font-bold text-dj-deckA tracking-widest text-base w-5">A</div>
+                <div class="url-row flex-1 flex relative">
+                    <input id="url-a" type="text" placeholder="STREAM URL / DIRECT MP3" class="url-input w-full bg-dj-bg border border-dj-border rounded text-xs py-1 pl-3 pr-14 text-slate-400 focus:outline-none focus:border-dj-deckA focus:text-white font-mono transition-colors">
+                    <button id="load-a" class="load-btn absolute right-0.5 top-0.5 bottom-0.5 px-3 bg-dj-border hover:bg-dj-deckA/20 hover:text-dj-deckA rounded text-[10px] font-bold text-white uppercase tracking-wider transition-colors">Load</button>
+                </div>
+            </div>
+
+            <div id="warn-a" class="url-warn hidden px-3 py-1 text-[10px] text-dj-alert tracking-wide bg-dj-alert/5 border-b border-dj-alert/30"></div>
+
+            <div class="p-3 flex flex-col gap-3 flex-1 min-h-0">
+                <!-- Track card -->
+                <div class="track-info bg-[#08080a] rounded-md border border-dj-border p-2.5 flex flex-col gap-1.5 shadow-inner">
+                    <div class="flex justify-between items-start gap-3">
+                        <div class="flex flex-col overflow-hidden flex-1 min-w-0">
+                            <span id="track-name-a" class="track-name text-white font-semibold truncate text-xs tracking-wide">NO TRACK LOADED</span>
+                        </div>
+                        <div class="bpm-row flex flex-col items-end shrink-0">
+                            <span class="bpm-label text-[9px] text-slate-500 uppercase font-bold tracking-widest">BPM</span>
+                            <div id="bpm-a" class="bpm-value font-mono text-sm text-white leading-tight">---</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end items-center">
+                        <div id="time-a" class="time-display font-mono text-[28px] text-dj-deckA font-bold tracking-tight leading-none drop-shadow-[0_0_10px_rgba(6,182,212,0.55)]">00:00:00</div>
+                    </div>
+                    <div class="waveform-wrapper h-8 mt-1 bg-dj-bg rounded border border-dj-border/50 overflow-hidden relative">
+                        <canvas id="wave-a" class="waveform block w-full h-full" width="280" height="32"></canvas>
+                    </div>
+                </div>
+
+                <!-- Jog + transport + pitch -->
+                <div class="flex-1 flex items-stretch gap-2 min-h-0">
+                    <!-- Transport column (left) -->
+                    <div class="transport w-14 flex flex-col justify-end gap-2 pb-1 shrink-0">
+                        <button id="loop-a" class="loop-btn w-12 h-12 rounded-full bg-dj-bg border-2 border-dj-border flex items-center justify-center hover:bg-dj-panelHover hover:border-zinc-600 transition shadow-knob">
+                            <span class="text-[10px] font-bold text-slate-400 tracking-wider pointer-events-none">LOOP</span>
+                        </button>
+                        <button id="cue-a" class="cue-btn w-12 h-12 rounded-full bg-dj-bg border-2 border-dj-alert/40 flex items-center justify-center hover:bg-dj-alert/10 hover:border-dj-alert transition shadow-knob">
+                            <span class="text-[10px] font-bold text-dj-alert tracking-wider drop-shadow-[0_0_2px_rgba(239,68,68,0.8)] pointer-events-none">CUE</span>
+                        </button>
+                        <button id="play-a" data-playing="false" class="play-btn play-btn--a w-12 h-12 rounded-full bg-dj-bg border-2 border-dj-deckA/50 flex items-center justify-center hover:bg-dj-deckA/20 hover:border-dj-deckA transition shadow-knob shadow-neon-a">▶</button>
+                    </div>
+
+                    <!-- Jog wheel -->
+                    <div class="flex-1 flex items-center justify-center min-w-0">
+                        <div id="jog-a" class="jog-wheel w-36 h-36 rounded-full bg-dj-bg p-1 shadow-jog border border-black relative flex items-center justify-center">
+                            <div class="jog-ring w-full h-full rounded-full p-1 flex items-center justify-center shadow-inner">
+                                <div class="jog-grooves w-full h-full rounded-full border-4 border-zinc-800 flex items-center justify-center relative overflow-hidden">
+                                    <div class="jog-center w-16 h-16 rounded-full bg-dj-bg border border-zinc-700 shadow-inner flex flex-col items-center justify-center z-10 relative">
+                                        <span class="text-[9px] text-slate-500 font-bold tracking-widest pointer-events-none">RAVE</span>
+                                        <div class="jog-marker w-1.5 h-4 absolute top-1 bg-dj-deckA rounded-full shadow-[0_0_6px_#06b6d4]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pitch vertical -->
+                    <div class="pitch-row w-12 flex flex-col items-center py-2 bg-[#0c0c0f] rounded border border-dj-border relative shrink-0">
+                        <span class="pitch-label text-[9px] text-slate-500 font-bold">+</span>
+                        <div class="flex-1 w-full flex items-center justify-center my-1 min-h-0 relative">
+                            <input id="pitch-a" type="range" min="-50" max="50" step="0.5" value="0" class="pitch-slider">
+                        </div>
+                        <span class="pitch-label text-[9px] text-slate-500 font-bold">-</span>
+                        <div id="pitch-val-a" class="pitch-val absolute -bottom-4 text-[10px] font-mono text-dj-deckA bg-black px-1.5 rounded border border-dj-border">0.0%</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════ LIBRARY A (left of mixer) ═════════ -->
+        <aside class="library-side flex flex-col bg-dj-panel rounded-lg border border-dj-border overflow-hidden w-44 min-w-[160px] shrink-0">
+            <div class="library-header h-7 bg-zinc-900 border-b border-dj-border flex items-center px-3 justify-between shrink-0">
+                <span class="library-title text-[11px] font-bold text-dj-deckA tracking-widest">LIB · A</span>
+                <span id="library-count-a" class="library-count text-[10px] font-mono text-dj-deckA bg-dj-deckA/10 border border-dj-deckA/30 rounded px-2">0</span>
+            </div>
+            <div class="flex-1 overflow-y-auto bg-[#0a0a0c]">
+                <div id="library-list-a" class="library-list flex flex-col"></div>
+                <div id="library-empty-a" class="library-empty text-[10px] text-slate-600 text-center py-6 tracking-widest">EMPTY</div>
+            </div>
+        </aside>
+
+        <!-- ═════════ CENTER: MIXER ═════════ -->
+        <section class="mixer-column w-60 flex flex-col gap-2 min-w-[240px]">
+
+            <!-- Mixer -->
+            <div class="mixer bg-dj-panel rounded-lg border border-dj-border p-3 flex flex-col shadow-xl flex-1">
+                <div class="mixer-label text-center mb-2 border-b border-dj-border pb-1">
+                    <h2 class="text-[11px] font-bold tracking-[0.25em] text-slate-400">MIXER</h2>
+                </div>
+
+                <div class="eq-section flex justify-between gap-2">
+                    <!-- CH A -->
+                    <div class="eq-channel flex flex-col items-center gap-1.5 flex-1">
+                        <span class="eq-label text-[9px] text-dj-deckA font-bold tracking-widest px-2 py-0.5 bg-dj-deckA/10 border border-dj-deckA/30 rounded">CH A</span>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="gain-a" class="knob knob--gain" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">GAIN</span>
+                        </div>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="eq-a-hi" class="knob" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">HI</span>
+                        </div>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="eq-a-mid" class="knob" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">MID</span>
+                        </div>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="eq-a-lo" class="knob" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">LO</span>
+                        </div>
+                        <div class="relative w-6 h-24 mt-1">
+                            <input id="fader-a" type="range" min="0" max="100" value="100" class="ch-fader">
+                        </div>
+                    </div>
+
+                    <!-- CENTER: GO LIVE + CROSSFADER -->
+                    <div class="mixer-center flex flex-col items-center border-x border-dj-border/50 px-2 gap-2 w-16 shrink-0">
+                        <span class="text-[9px] text-slate-500 font-bold tracking-widest">MASTER</span>
+                        <button id="go-live-btn" class="go-live-btn w-full py-2 rounded bg-dj-deckA/10 border border-dj-deckA text-dj-deckA text-[10px] font-bold tracking-wider hover:bg-dj-deckA/20 hover:shadow-neon-a transition">GO LIVE</button>
+
+                        <div class="flex flex-col items-center mt-auto gap-1 w-full pt-2">
+                            <span class="xfade-label text-[8px] text-slate-500 font-bold tracking-widest">XFADER</span>
+                            <input id="crossfader" type="range" min="0" max="100" value="50" class="xfader w-full">
+                            <div class="xfade-markers flex justify-between w-full text-[9px] font-bold px-0.5">
+                                <span class="text-dj-deckA">A</span>
+                                <span class="text-dj-deckB">B</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CH B -->
+                    <div class="eq-channel flex flex-col items-center gap-1.5 flex-1">
+                        <span class="eq-label text-[9px] text-dj-deckB font-bold tracking-widest px-2 py-0.5 bg-dj-deckB/10 border border-dj-deckB/30 rounded">CH B</span>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="gain-b" class="knob knob--gain" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">GAIN</span>
+                        </div>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="eq-b-hi" class="knob" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">HI</span>
+                        </div>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="eq-b-mid" class="knob" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">MID</span>
+                        </div>
+                        <div class="knob-wrap flex flex-col items-center gap-0.5">
+                            <div id="eq-b-lo" class="knob" data-value="75"></div>
+                            <span class="knob-label text-[8px] text-slate-500 font-bold">LO</span>
+                        </div>
+                        <div class="relative w-6 h-24 mt-1">
+                            <input id="fader-b" type="range" min="0" max="100" value="100" class="ch-fader">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ═════════ LIBRARY B (right of mixer) ═════════ -->
+        <aside class="library-side flex flex-col bg-dj-panel rounded-lg border border-dj-border overflow-hidden w-44 min-w-[160px] shrink-0">
+            <div class="library-header h-7 bg-zinc-900 border-b border-dj-border flex items-center px-3 justify-between shrink-0">
+                <span class="library-title text-[11px] font-bold text-dj-deckB tracking-widest">LIB · B</span>
+                <span id="library-count-b" class="library-count text-[10px] font-mono text-dj-deckB bg-dj-deckB/10 border border-dj-deckB/30 rounded px-2">0</span>
+            </div>
+            <div class="flex-1 overflow-y-auto bg-[#0a0a0c]">
+                <div id="library-list-b" class="library-list flex flex-col"></div>
+                <div id="library-empty-b" class="library-empty text-[10px] text-slate-600 text-center py-6 tracking-widest">EMPTY</div>
+            </div>
+        </aside>
+
+        <!-- ═════════ DECK B ═════════ -->
+        <section class="deck deck--b flex-1 bg-dj-panel rounded-lg border border-dj-border flex flex-col overflow-hidden min-w-[300px]">
+            <div class="h-10 border-b border-dj-border flex items-center px-3 gap-3 bg-gradient-to-l from-dj-deckB/10 to-transparent shrink-0">
+                <div class="url-row flex-1 flex relative">
+                    <input id="url-b" type="text" placeholder="STREAM URL / DIRECT MP3" class="url-input w-full bg-dj-bg border border-dj-border rounded text-xs py-1 pl-14 pr-3 text-slate-400 focus:outline-none focus:border-dj-deckB focus:text-white font-mono transition-colors">
+                    <button id="load-b" class="load-btn absolute left-0.5 top-0.5 bottom-0.5 px-3 bg-dj-border hover:bg-dj-deckB/20 hover:text-dj-deckB rounded text-[10px] font-bold text-white uppercase tracking-wider transition-colors">Load</button>
+                </div>
+                <div class="deck-label font-bold text-dj-deckB tracking-widest text-base w-5 text-right">B</div>
+            </div>
+
+            <div id="warn-b" class="url-warn hidden px-3 py-1 text-[10px] text-dj-alert tracking-wide bg-dj-alert/5 border-b border-dj-alert/30"></div>
+
+            <div class="p-3 flex flex-col gap-3 flex-1 min-h-0">
+                <!-- Track card (mirror) -->
+                <div class="track-info bg-[#08080a] rounded-md border border-dj-border p-2.5 flex flex-col gap-1.5 shadow-inner">
+                    <div class="flex justify-between items-start gap-3">
+                        <div class="bpm-row flex flex-col items-start shrink-0">
+                            <span class="bpm-label text-[9px] text-slate-500 uppercase font-bold tracking-widest">BPM</span>
+                            <div id="bpm-b" class="bpm-value font-mono text-sm text-white leading-tight">---</div>
+                        </div>
+                        <div class="flex flex-col overflow-hidden flex-1 min-w-0 text-right">
+                            <span id="track-name-b" class="track-name text-white font-semibold truncate text-xs tracking-wide">NO TRACK LOADED</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-start items-center">
+                        <div id="time-b" class="time-display font-mono text-[28px] text-dj-deckB font-bold tracking-tight leading-none drop-shadow-[0_0_10px_rgba(16,185,129,0.55)]">00:00:00</div>
+                    </div>
+                    <div class="waveform-wrapper h-8 mt-1 bg-dj-bg rounded border border-dj-border/50 overflow-hidden relative">
+                        <canvas id="wave-b" class="waveform block w-full h-full" width="280" height="32"></canvas>
+                    </div>
+                </div>
+
+                <!-- Pitch + jog + transport (mirror) -->
+                <div class="flex-1 flex items-stretch gap-2 min-h-0">
+                    <!-- Pitch vertical (left side for B) -->
+                    <div class="pitch-row w-12 flex flex-col items-center py-2 bg-[#0c0c0f] rounded border border-dj-border relative shrink-0">
+                        <span class="pitch-label text-[9px] text-slate-500 font-bold">+</span>
+                        <div class="flex-1 w-full flex items-center justify-center my-1 min-h-0 relative">
+                            <input id="pitch-b" type="range" min="-50" max="50" step="0.5" value="0" class="pitch-slider">
+                        </div>
+                        <span class="pitch-label text-[9px] text-slate-500 font-bold">-</span>
+                        <div id="pitch-val-b" class="pitch-val absolute -bottom-4 text-[10px] font-mono text-dj-deckB bg-black px-1.5 rounded border border-dj-border">0.0%</div>
+                    </div>
+
+                    <!-- Jog wheel -->
+                    <div class="flex-1 flex items-center justify-center min-w-0">
+                        <div id="jog-b" class="jog-wheel w-36 h-36 rounded-full bg-dj-bg p-1 shadow-jog border border-black relative flex items-center justify-center">
+                            <div class="jog-ring w-full h-full rounded-full p-1 flex items-center justify-center shadow-inner">
+                                <div class="jog-grooves w-full h-full rounded-full border-4 border-zinc-800 flex items-center justify-center relative overflow-hidden">
+                                    <div class="jog-center w-16 h-16 rounded-full bg-dj-bg border border-zinc-700 shadow-inner flex flex-col items-center justify-center z-10 relative">
+                                        <span class="text-[9px] text-slate-500 font-bold tracking-widest pointer-events-none">RAVE</span>
+                                        <div class="jog-marker w-1.5 h-4 absolute top-1 bg-dj-deckB rounded-full shadow-[0_0_6px_#10b981]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transport column (right) -->
+                    <div class="transport w-14 flex flex-col justify-end gap-2 pb-1 shrink-0">
+                        <button id="loop-b" class="loop-btn w-12 h-12 rounded-full bg-dj-bg border-2 border-dj-border flex items-center justify-center hover:bg-dj-panelHover hover:border-zinc-600 transition shadow-knob">
+                            <span class="text-[10px] font-bold text-slate-400 tracking-wider pointer-events-none">LOOP</span>
+                        </button>
+                        <button id="cue-b" class="cue-btn w-12 h-12 rounded-full bg-dj-bg border-2 border-dj-alert/40 flex items-center justify-center hover:bg-dj-alert/10 hover:border-dj-alert transition shadow-knob">
+                            <span class="text-[10px] font-bold text-dj-alert tracking-wider drop-shadow-[0_0_2px_rgba(239,68,68,0.8)] pointer-events-none">CUE</span>
+                        </button>
+                        <button id="play-b" data-playing="false" class="play-btn play-btn--b w-12 h-12 rounded-full bg-dj-bg border-2 border-dj-deckB/50 flex items-center justify-center hover:bg-dj-deckB/20 hover:border-dj-deckB transition shadow-knob shadow-neon-b">▶</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script src="js/dj.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
