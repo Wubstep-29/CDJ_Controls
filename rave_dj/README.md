@@ -6,12 +6,15 @@ A chill two deck DJ booth for FiveM. It uses positional audio, so anyone hanging
 
 Before you fire this up, make sure you have these started in your server:
 
-* qbx_core
 * ox_lib
 * ox_target
 * xsound (the patched version, see below)
 
 Just drop the folder into `resources/[rave]/rave_dj` and add `ensure rave_dj` to your server.cfg.
+
+### Works with any framework
+
+This script is framework agnostic. It runs on ESX, QBCore, QBox, vRP, or even fully standalone, because it doesn't touch jobs, money, or any framework specific player data. Notifications go through ox_lib so you get the same look you have everywhere else on your server.
 
 ### A quick note on xsound
 

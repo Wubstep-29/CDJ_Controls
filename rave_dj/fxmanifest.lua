@@ -7,7 +7,6 @@ description 'Rave DJ System'
 version '1.0.0'
 
 dependencies {
-    'qbx_core',
     'ox_lib',
     'ox_target',
     'xsound',
@@ -15,12 +14,10 @@ dependencies {
 
 shared_scripts {
     '@ox_lib/init.lua',
-    '@qbx_core/modules/lib.lua',
     'config/shared.lua',
 }
 
 client_scripts {
-    '@qbx_core/modules/playerdata.lua',
     'client/main.lua',
     'client/audio.lua',
     'client/nui.lua',

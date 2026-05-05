@@ -44,12 +44,12 @@ local function useDJBooth()
         return
     end
     if currentRole then
-        exports.qbx_core:Notify('You already have a role.', 'error')
+        lib.notify({ description = 'You already have a role.', type = 'error' })
         return
     end
     local ok, reason = lib.callback.await('rave:server:claimDJ', false)
     if not ok then
-        exports.qbx_core:Notify(reason or 'Booth is occupied.', 'error')
+        lib.notify({ description = reason or 'Booth is occupied.', type = 'error' })
         return
     end
     currentRole = 'dj'
@@ -122,7 +122,7 @@ local function placementMode()
 
     local hash = joaat(deckProp.model)
     if not loadModel(hash) then
-        exports.qbx_core:Notify(('Failed to load preview model: %s'):format(deckProp.model), 'error')
+        lib.notify({ description = ('Failed to load preview model: %s'):format(deckProp.model), type = 'error' })
         return
     end
 
@@ -193,7 +193,7 @@ local function placementMode()
         TriggerServerEvent('rave:server:setBoothCoords', finalCoords, finalHeading)
         -- server broadcasts rave:client:boothMoved which respawns props for everyone
     else
-        exports.qbx_core:Notify('Placement cancelled.', 'inform')
+        lib.notify({ description = 'Placement cancelled.', type = 'inform' })
     end
 end
 
@@ -205,7 +205,7 @@ end, false)
 -- /dj — claim DJ role and open the CDJ UI (fallback; normally opened via ox_target)
 RegisterCommand('dj', function()
     if not boothPlaced() then
-        exports.qbx_core:Notify('No DJ booth placed. Use /djbooth to place one.', 'error')
+        lib.notify({ description = 'No DJ booth placed. Use /djbooth to place one.', type = 'error' })
         return
     end
     useDJBooth()
